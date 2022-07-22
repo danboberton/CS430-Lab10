@@ -1,1 +1,0 @@
-mysqldump -h faure.cs.colostate.edu -u dbutcher -p --all-databases > db-backup/recentBackup.sql

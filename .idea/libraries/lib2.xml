@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="lib2">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/out/production/CS430-Lab8/jdom/lib/jaxen-1.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/out/production/CS430-Lab8/jdom/lib/xml-apis.jar!/" />
+      <root url="jar://$PROJECT_DIR$/out/production/CS430-Lab8/jdom/lib/xercesImpl.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
