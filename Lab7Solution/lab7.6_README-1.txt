@@ -1,0 +1,2 @@
+Activities not allowed due to referential integrity:
+8 (no publisher with publisher_id 90000 exists)
