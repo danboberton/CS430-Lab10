@@ -1,15 +1,16 @@
-package lab9;
+package lab10;
 
-import lab9.exceptions.QueryException;
+import lab10.exceptions.QueryException;
 
 import java.sql.*;
 
 public class dbConnection {
     private Connection con;
-    private final String CONNECTION = "jdbc:mysql://faure:3306/dbutcher";
+
+
+    private String CONNECTION = null;
     private final String USR = "dbutcher";
     private final String PWD = "822266208";
-    private com.mysql.cj.jdbc.Driver Driver;
 
     public dbConnection(){
         this.init();
@@ -41,6 +42,11 @@ public class dbConnection {
     }
 
     private void init(){
+        if (Main.REMOTE_TUNNEL){
+            this.CONNECTION = "jdbc:mysql://faure:3306/dbutcher";
+        } else {
+            this.CONNECTION = "jdbc:mysql://localhost:9111/dbutcher";
+        }
 
         try{
             con = DriverManager.getConnection(CONNECTION, USR, PWD);

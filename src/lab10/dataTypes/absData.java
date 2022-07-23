@@ -1,6 +1,4 @@
-package lab9.dataTypes;
-
-import java.util.BitSet;
+package lab10.dataTypes;
 
 public abstract class absData {
 

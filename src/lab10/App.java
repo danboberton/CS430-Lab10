@@ -1,19 +1,19 @@
-package lab9;
+package lab10;
 
-import lab9.exceptions.QueryException;
+import lab10.exceptions.QueryException;
 import org.jdom2.input.SAXBuilder;
 import org.jdom2.*;
-import lab9.dataTypes.*;
+import lab10.dataTypes.*;
 
 import java.sql.ResultSetMetaData;
-import java.time.*;
 
 
 import java.io.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
+
+import javax.swing.JOptionPane;
 
 
 public class App {
@@ -39,14 +39,109 @@ public class App {
 
     public App(dbConnection db, String[] args, boolean verbose){
         this.db = db;
-        this.args = args;
+         this.args = args;
         this.verbose = verbose;
 
-        this.run();
+//        this.runXML();
+        this.runLab10();
 
     }
 
-    private void run(){
+    private void runLab10() {
+        String member_ID;
+        String ISBN = null;
+        String library = null;
+        boolean completedRunLoop = false;
+
+        JOptionPane.showMessageDialog (null,
+                "CS430 Lab 10 Library Book Availability\n Dan Butcher");
+
+        while (!completedRunLoop){
+
+            boolean completedMemberLoop = false;
+
+            while(!completedMemberLoop){
+                if ((member_ID = getValidMemberID()) != null){
+                    // Got valid ID
+                    completedMemberLoop = true;
+                } else {
+                    // Window create new member ID or try memberID again
+                    member_ID = createNewMemberID();
+
+                }
+            }
+
+            boolean completedCheckoutLoop = false;
+
+            while (!completedCheckoutLoop){
+                if ((ISBN = getBook()) != null) {
+                    completedCheckoutLoop = true;
+                    // Found book
+                } else {
+                    // didn't find book
+                }
+            } //End Checkout Loop
+
+            displayBookLocations();
+
+            completedRunLoop = promptRunAgain();
+
+        }
+
+    }
+
+    private boolean promptRunAgain() {
+        // RUN again?
+        return false;
+    }
+
+    private void displayBookLocations() {
+        // If either library has the book and there are copies available
+        // the program should print a message telling the member what library and shelf the book is on
+        // (there may be more than one).
+        // If either library has the book and all copies are checked out, the program should
+        // print a message to the member that all copies are currently checked out.
+    }
+
+    // TODO create memberID
+    private String createNewMemberID() {
+        JOptionPane.showMessageDialog(null, "Let's create a new Member ID for you.");
+        
+        return null;
+    }
+
+    // TODO get book
+    private String getBook() {
+        // Find by isbn, name (partial, allow user to select duplicates
+        // author (allow select from list)
+        // return null if book not found
+        return null;
+    }
+
+    private String getValidMemberID() {
+        String inputID;
+        String idResult = null;
+        inputID = JOptionPane.showInputDialog("Please enter your member ID.").trim();
+
+        // Query member ID
+        String query = String.format("SELECT member_id from member " +
+                "WHERE member_id = %s", inputID);
+
+        ResultSet results = db.query(query);
+        try {
+            while (results.next()) {
+                if (results.getString("member_id").equals(inputID)){
+                    idResult = inputID;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return idResult;
+    }
+
+    private void runXML(){
         parseXML parser = new parseXML();
 
         File inputFile = new File(args[0]);

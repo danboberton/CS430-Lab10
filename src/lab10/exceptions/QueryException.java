@@ -1,4 +1,4 @@
-package lab9.exceptions;
+package lab10.exceptions;
 
 public class QueryException extends Exception{
 
