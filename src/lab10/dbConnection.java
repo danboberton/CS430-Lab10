@@ -35,6 +35,8 @@ public class dbConnection {
         try{
             con.setAutoCommit(false);
             PreparedStatement stmt = con.prepareStatement(query);
+            stmt.execute();
+            System.out.printf("*** SQL\n%s\n*** Executed", query);
             con.commit();
         } catch (SQLException e){
             System.out.printf("\n<xxx>Error executing statement %s\n", query);
@@ -42,7 +44,7 @@ public class dbConnection {
     }
 
     private void init(){
-        if (Main.REMOTE_TUNNEL){
+        if (!Main.REMOTE_TUNNEL){
             this.CONNECTION = "jdbc:mysql://faure:3306/dbutcher";
         } else {
             this.CONNECTION = "jdbc:mysql://localhost:9111/dbutcher";
@@ -50,7 +52,7 @@ public class dbConnection {
 
         try{
             con = DriverManager.getConnection(CONNECTION, USR, PWD);
-            System.out.printf("Connected to: %s@%s", USR, CONNECTION);
+            System.out.printf("Connected to: %s@%s\n", USR, CONNECTION);
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

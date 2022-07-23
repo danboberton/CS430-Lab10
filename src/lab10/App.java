@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
 
 public class App {
@@ -59,20 +59,19 @@ public class App {
         while (!completedRunLoop){
 
             boolean completedMemberLoop = false;
-
             while(!completedMemberLoop){
                 if ((member_ID = getValidMemberID()) != null){
                     // Got valid ID
                     completedMemberLoop = true;
+                    JOptionPane.showMessageDialog(null, "MemberID Found!");
                 } else {
                     // Window create new member ID or try memberID again
-                    member_ID = createNewMemberID();
-
+                    createNewMemberID();
+                    completedMemberLoop = true;
                 }
-            }
+            } // End Member Loop
 
             boolean completedCheckoutLoop = false;
-
             while (!completedCheckoutLoop){
                 if ((ISBN = getBook()) != null) {
                     completedCheckoutLoop = true;
@@ -102,16 +101,112 @@ public class App {
         // If either library has the book and all copies are checked out, the program should
         // print a message to the member that all copies are currently checked out.
     }
-
+    // adapted from https://stackoverflow.com/questions/6555040/multiple-input-in-joptionpane-showinputdialog
     // TODO create memberID
-    private String createNewMemberID() {
+    private boolean createNewMemberID() {
+        int memberID;
+        String first_name, last_name, DOB, gender = null;
         JOptionPane.showMessageDialog(null, "Let's create a new Member ID for you.");
-        
-        return null;
+
+        JTextField fname_field = new JTextField(50);
+        JTextField lname_field = new JTextField(50);
+        JTextField dob_field = new JTextField(50);
+        JTextField gender_field = new JTextField(50);
+
+        JPanel addMemberPanel = new JPanel();
+        addMemberPanel.setLayout(new BoxLayout(addMemberPanel, BoxLayout.Y_AXIS));
+        addMemberPanel.add(new JLabel("Please enter your information."));
+        addMemberPanel.add(Box.createHorizontalStrut(50));
+        addMemberPanel.add(new JLabel("First Name:"));
+        addMemberPanel.add(fname_field);
+        addMemberPanel.add(new JLabel("Last Name:"));
+        addMemberPanel.add(lname_field);
+        addMemberPanel.add(new JLabel("Date of Birth (yyyy-mm-dd):"));
+        addMemberPanel.add(dob_field);
+        addMemberPanel.add(new JLabel("Gender (m/f/o):"));
+        addMemberPanel.add(gender_field);
+
+        int result = JOptionPane.showConfirmDialog(null, addMemberPanel,
+                "Please Enter Member information", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            memberID = getNextMemberID();
+            first_name = fname_field.getText();
+            last_name = lname_field.getText();
+            DOB = dob_field.getText();
+            gender = gender_field.getText();
+
+        String newMember = String.format("INSERT INTO member " +
+                "VALUES (%s, \"%s\", \"%s\", \"%s\", \"%s\");", memberID, first_name, last_name, DOB, gender);
+
+        db.statement(newMember);
+
+            if (!isValidMemberID(String.valueOf(memberID))){
+                JOptionPane.showMessageDialog(null, "Sorry, member not created.");
+                return false;
+            } else {
+                JOptionPane.showMessageDialog(null, "Member Created.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int getNextMemberID() {
+        String query = String.format("SELECT * FROM member " +
+                "ORDER BY member_id DESC;");
+        ResultSet results = db.query(query);
+        try {
+            results.next();
+            int largestID = Integer.parseInt(results.getString("member_id"));
+            return largestID + 1;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     // TODO get book
     private String getBook() {
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        ButtonGroup radioSelect = new ButtonGroup();
+        JRadioButton b_isbn = new JRadioButton("ISBN");
+        JRadioButton b_author = new JRadioButton("Author");
+        JRadioButton b_title = new JRadioButton("Book Title");
+        b_title.setSelected(true);
+        radioSelect.add(b_isbn);
+        radioSelect.add(b_author);
+        radioSelect.add(b_title);
+
+        JTextField searchField = new JTextField(50);
+
+        panel.add(new JLabel("Search book by ISBN, Author, or Title:"));
+        panel.add(Box.createHorizontalStrut(50));
+        panel.add(b_isbn);
+        panel.add(b_author);
+        panel.add(b_title);
+        panel.add(Box.createHorizontalStrut(50));
+        panel.add(new JLabel("Search:"));
+        panel.add(searchField);
+
+        int result = JOptionPane.showConfirmDialog(null, panel,
+                "Book Search", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            ButtonModel selection = radioSelect.getSelection();
+            if (selection.equals(b_isbn)){
+                System.out.println("Blah");
+            }
+
+        }
+
+
+
+
+
+
+
+
         // Find by isbn, name (partial, allow user to select duplicates
         // author (allow select from list)
         // return null if book not found
@@ -120,10 +215,17 @@ public class App {
 
     private String getValidMemberID() {
         String inputID;
-        String idResult = null;
         inputID = JOptionPane.showInputDialog("Please enter your member ID.").trim();
 
-        // Query member ID
+        if (isValidMemberID(inputID)){
+            return inputID;
+        }
+
+        JOptionPane.showMessageDialog(null, "Member ID " + inputID + " not found.");
+        return null;
+    }
+
+    private boolean isValidMemberID(String inputID) {
         String query = String.format("SELECT member_id from member " +
                 "WHERE member_id = %s", inputID);
 
@@ -131,14 +233,15 @@ public class App {
         try {
             while (results.next()) {
                 if (results.getString("member_id").equals(inputID)){
-                    idResult = inputID;
+                    System.out.printf("Found memberID: %s .\n", inputID);
+                    return true;
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-        return idResult;
+        System.out.printf("Failed to find memberID: %s .\n", inputID);
+        return false;
     }
 
     private void runXML(){
