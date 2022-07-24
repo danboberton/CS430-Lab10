@@ -1,2 +1,2 @@
 #!/bin/bash
-tar -cvf lab9_dbutcher.tar src lib activityfile.xml README.md output.txt
+tar -cvf lab10_dbutcher.tar src lib README.md

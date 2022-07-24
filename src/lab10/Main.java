@@ -1,7 +1,7 @@
 package lab10;
 
 public class Main {
-    public static boolean REMOTE_TUNNEL = true;
+    public static boolean REMOTE_TUNNEL = false;
     public static void main(String args[]){
 
 

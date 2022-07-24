@@ -52,7 +52,7 @@ public class App {
 
     }
 
-    private void runLab10() {
+    public void runLab10() {
         String member_ID;
         String ISBN = null;
         String library = null;
@@ -61,34 +61,14 @@ public class App {
         JOptionPane.showMessageDialog (null,
                 "CS430 Lab 10 Library Book Availability\n Dan Butcher");
 
-        while (!completedRunLoop && !finishedWithSearch){
-
-            boolean completedMemberLoop = false;
-            while(!completedMemberLoop){
-                if ((member_ID = getValidMemberID()) != null){
-                    // Got valid ID
-                    completedMemberLoop = true;
-                    JOptionPane.showMessageDialog(null, "MemberID Found!");
-                    break;
-                } else {
-                    // Window create new member ID or try memberID again
-                    createNewMemberID();
-                    completedMemberLoop = true;
-                }
-            } // End Member Loop
-
-            boolean completedCheckoutLoop = false;
-            while (!completedCheckoutLoop){
-                    getBook();
-                    completedCheckoutLoop = true;
-                    break;
-
-            } //End Checkout Loop
-
-            completedRunLoop = promptRunAgain();
+        if ((member_ID = getValidMemberID()) != null){
+            JOptionPane.showMessageDialog(null, "MemberID Found!");
+        } else {
+            // Window create new member ID or try memberID again
+            createNewMemberID();
 
         }
-
+            getBook();
     }
 
     private boolean promptRunAgain() {
@@ -205,7 +185,8 @@ public class App {
             public void windowClosing(WindowEvent windowEvent){
                 finishedWithSearch = true;
                 System.out.println("closed window");
-                frame.dispose();
+                dbConnection db = new dbConnection();
+                App App = new App(db, args, verbose);
             }
         });
 
@@ -231,9 +212,6 @@ public class App {
         // Find by isbn, name (partial, allow user to select duplicates
         // author (allow select from list)
         // return null if book not found
-        while (!finishedWithSearch){
-            System.out.println(finishedWithSearch);
-        }
     }
 
     private void getTitleSearch(String text) {
