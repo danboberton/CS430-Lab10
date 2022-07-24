@@ -20,7 +20,7 @@ public class dbConnection {
         Statement stmt;
         ResultSet result = null;
         try{
-            stmt = con.createStatement();
+            stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             result = stmt.executeQuery(query);
         } catch (SQLException e) {
             System.out.printf("--xxx> FAILED Query %s", query);

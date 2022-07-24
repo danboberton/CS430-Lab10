@@ -5,6 +5,9 @@ import org.jdom2.input.SAXBuilder;
 import org.jdom2.*;
 import lab10.dataTypes.*;
 
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.ResultSetMetaData;
 
 
@@ -37,6 +40,8 @@ public class App {
     String data = null;
     private int index = 0;
 
+    boolean finishedWithSearch = false;
+
     public App(dbConnection db, String[] args, boolean verbose){
         this.db = db;
          this.args = args;
@@ -56,7 +61,7 @@ public class App {
         JOptionPane.showMessageDialog (null,
                 "CS430 Lab 10 Library Book Availability\n Dan Butcher");
 
-        while (!completedRunLoop){
+        while (!completedRunLoop && !finishedWithSearch){
 
             boolean completedMemberLoop = false;
             while(!completedMemberLoop){
@@ -64,6 +69,7 @@ public class App {
                     // Got valid ID
                     completedMemberLoop = true;
                     JOptionPane.showMessageDialog(null, "MemberID Found!");
+                    break;
                 } else {
                     // Window create new member ID or try memberID again
                     createNewMemberID();
@@ -73,15 +79,11 @@ public class App {
 
             boolean completedCheckoutLoop = false;
             while (!completedCheckoutLoop){
-                if ((ISBN = getBook()) != null) {
+                    getBook();
                     completedCheckoutLoop = true;
-                    // Found book
-                } else {
-                    // didn't find book
-                }
-            } //End Checkout Loop
+                    break;
 
-            displayBookLocations();
+            } //End Checkout Loop
 
             completedRunLoop = promptRunAgain();
 
@@ -91,7 +93,7 @@ public class App {
 
     private boolean promptRunAgain() {
         // RUN again?
-        return false;
+        return finishedWithSearch;
     }
 
     private void displayBookLocations() {
@@ -166,52 +168,249 @@ public class App {
     }
 
     // TODO get book
-    private String getBook() {
+    private void getBook() {
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        ResultSet potentialResults = null;
+        finishedWithSearch = false;
+
+        JFrame frame = new JFrame();
+        frame.setSize(500, 500);
+        frame.setLayout(new GridLayout(10, 1));
         ButtonGroup radioSelect = new ButtonGroup();
         JRadioButton b_isbn = new JRadioButton("ISBN");
         JRadioButton b_author = new JRadioButton("Author");
         JRadioButton b_title = new JRadioButton("Book Title");
-        b_title.setSelected(true);
+        JButton b_search = new JButton("Search");
+        b_isbn.setSelected(true);
         radioSelect.add(b_isbn);
         radioSelect.add(b_author);
         radioSelect.add(b_title);
 
         JTextField searchField = new JTextField(50);
+        frame.add(new JLabel("Search book by ISBN, Author, or Title:"));
+        frame.add(Box.createHorizontalStrut(50));
+        frame.add(b_isbn);
+        frame.add(b_author);
+        frame.add(b_title);
+        frame.add(Box.createHorizontalStrut(50));
+        frame.add(new JLabel("Search:"));
+        frame.add(searchField);
+        frame.add(b_search);
 
-        panel.add(new JLabel("Search book by ISBN, Author, or Title:"));
-        panel.add(Box.createHorizontalStrut(50));
-        panel.add(b_isbn);
-        panel.add(b_author);
-        panel.add(b_title);
-        panel.add(Box.createHorizontalStrut(50));
-        panel.add(new JLabel("Search:"));
-        panel.add(searchField);
+        // frame.add(panel);
 
-        int result = JOptionPane.showConfirmDialog(null, panel,
-                "Book Search", JOptionPane.OK_CANCEL_OPTION);
-        if (result == JOptionPane.OK_OPTION) {
-            ButtonModel selection = radioSelect.getSelection();
-            if (selection.equals(b_isbn)){
-                System.out.println("Blah");
+        // Adapted from https://www.tutorialspoint.com/swing/swing_jbutton.htm
+//         Close Window
+        frame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent windowEvent){
+                finishedWithSearch = true;
+                System.out.println("closed window");
+                frame.dispose();
+            }
+        });
+
+        // Click Search
+        b_search.addActionListener(e -> {
+            if (b_isbn.isSelected()){
+                System.out.println("isbn selected");
+                getISBNSearch(searchField.getText());
+                finishedWithSearch = true;
+            } else if (b_author.isSelected()) {
+                System.out.println("author selected");
+                getAuthorSearch(searchField.getText());
+                finishedWithSearch = true;
+            } else if (b_title.isSelected()){
+                System.out.println("title selected");
+                getTitleSearch(searchField.getText());
+                finishedWithSearch = true;
+            }
+        });
+
+        frame.setVisible(true);
+//        potentialResults = db.query("SELECT;");
+        // Find by isbn, name (partial, allow user to select duplicates
+        // author (allow select from list)
+        // return null if book not found
+        while (!finishedWithSearch){
+            System.out.println(finishedWithSearch);
+        }
+    }
+
+    private void getTitleSearch(String text) {
+        String query = String.format("SELECT * FROM book AS b " +
+                "INNER JOIN library_book AS l ON b.ISBN = l.ISBN " +
+                "WHERE LOWER(b.title) LIKE LOWER(\"%%%s%%\");"
+                , text);
+
+        JPanel resultFrame = new JPanel();
+        resultFrame.add(new JLabel("Books titled like " + text));
+//        resultFrame.setSize(1000, 200);
+//        resultFrame.setLayout(new GridLayout(2, 1));
+
+        DefaultListModel<String> resultListModel = new DefaultListModel<>();
+        ResultSet sqlResults = db.query(query);
+        if (sqlResults == null) {
+            JOptionPane.showMessageDialog(null,"ERROR: Bad Title Search");
+            return;
+        }
+        int numResults = getNumResults(sqlResults);
+        if (numResults < 1){
+            String bookQuery = String.format("Sorry couldn't find title %s", text);
+            return;
+        }
+//
+        pickOptions(resultFrame, resultListModel, sqlResults);
+
+    }
+
+    private void getAuthorSearch(String text) {
+        String query = String.format("SELECT * FROM book AS b " +
+                "INNER JOIN library_book AS l ON b.ISBN = l.ISBN " +
+                "INNER JOIN author_book AS ab ON b.ISBN = ab.ISBN " +
+                "INNER JOIN author AS a ON a.author_id = ab.author_id " +
+                "WHERE LOWER(a.first_name) LIKE LOWER(\"%%%s%%\") OR " +
+                "LOWER(a.last_name) LIKE LOWER(\"%%%s%%\") OR " +
+                "a.author_id = \"%s\";", text, text, text);
+
+        JPanel resultFrame = new JPanel();
+        resultFrame.add(new JLabel("Books by " + text));
+//        resultFrame.setSize(1000, 200);
+        resultFrame.setLayout(new GridLayout(2, 1));
+
+        DefaultListModel<String> resultListModel = new DefaultListModel<>();
+        ResultSet sqlResults = db.query(query);
+        if (sqlResults == null) {
+            JOptionPane.showMessageDialog(null,"ERROR: Bad Author Search");
+            return;
+        }
+        int numResults = getNumResults(sqlResults);
+        if (numResults < 1){
+            String bookQuery = String.format("Sorry couldn't find author %s", text);
+            return;
+        }
+//
+        pickOptions(resultFrame, resultListModel, sqlResults);
+    }
+
+    private void pickOptions(JPanel resultFrame, DefaultListModel<String> resultListModel, ResultSet sqlResults) {
+        while(true){
+            try {
+                if (!sqlResults.next()) break;
+                StringBuilder b = new StringBuilder();
+                b.append(sqlResults.getString("title"));
+                b.append(" @ ");
+                b.append(sqlResults.getString("library_name"));
+                resultListModel.addElement(b.toString());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
 
         }
 
+        JList<String> resultList = new JList<>(resultListModel);
+        resultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        resultList.setLayoutOrientation(JList.VERTICAL);
+        resultList.setVisibleRowCount(-1);
+        JScrollPane listScroller = new JScrollPane(resultList);
+        listScroller.setPreferredSize(new Dimension(250, 500));
 
+        resultFrame.add(listScroller);
 
+        int result = JOptionPane.showConfirmDialog(null, resultFrame,
+                "Please select a result:", JOptionPane.OK_CANCEL_OPTION);
+        if (result == JOptionPane.OK_OPTION) {
+            int selectedIndex = resultList.getSelectedIndex();
+            try {
+                sqlResults.absolute(selectedIndex + 1);
+                if(bookAvailable(sqlResults)){
+                    JPanel foundPanel = new JPanel();
+                    String title = sqlResults.getString("title");
+                    String lib = sqlResults.getString("library_name");
+                    String floor = sqlResults.getString("floor");
+                    String shelf = sqlResults.getString("shelf");
+                    String finalString = String.format("\"%s\"\n Library: %s\n Floor: %s\n Shelf: %s",
+                            title, lib, floor, shelf);
+                    foundPanel.add(new JLabel(finalString));
+                    JOptionPane.showConfirmDialog(null, foundPanel,
+                            "Here's where your book is!", JOptionPane.OK_CANCEL_OPTION);
+                } else {
+                    JOptionPane.showMessageDialog(null,"Sorry! This book is not available at this library.");
+                }
 
-
-
-
-
-        // Find by isbn, name (partial, allow user to select duplicates
-        // author (allow select from list)
-        // return null if book not found
-        return null;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
+
+    private boolean bookAvailable(ResultSet book) {
+        try {
+            String curISBN = book.getString("ISBN");
+            String curLib = book.getString("library_name");
+            String query = String.format("SELECT * FROM library_book " +
+                    "WHERE isbn = \"%s\" AND " +
+                    "library_name = \"%s\" AND " +
+                    "copies_available > 0;", curISBN, curLib);
+
+            ResultSet results = db.query(query);
+            if(results != null && getNumResults(results) < 1){
+                return false;
+            } else {
+                return true;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void getISBNSearch(String text) {
+        String query = String.format("SELECT * FROM book AS b " +
+                "INNER JOIN library_book AS l ON b.ISBN = l.ISBN " +
+                "WHERE b.ISBN = \"%s\" AND " +
+                "l.copies_available > 0;", text);
+
+        JPanel resultFrame = new JPanel();
+        resultFrame.setSize(500, 200);
+        resultFrame.setLayout(new GridLayout(1, 1));
+
+        DefaultListModel<String> resultListModel = new DefaultListModel<>();
+        ResultSet sqlResults = db.query(query);
+        if (sqlResults == null) {
+            // Error, bad Query
+        }
+        int numResults = getNumResults(sqlResults);
+        if (numResults < 1){
+            String bookQuery = String.format("SELECT * FROM book WHERE ISBN = \"%s\";", text);
+//
+            ResultSet doesBookExsist = db.query(bookQuery);
+            if(getNumResults(doesBookExsist) < 1){
+                JOptionPane.showMessageDialog(null,"Sorry, neither Library has this book.");
+            } else {
+                JOptionPane.showMessageDialog(null,"Sorry, there are no copies of this book currently available.");
+        }
+
+        return;
+        }
+//
+        pickOptions(resultFrame, resultListModel, sqlResults);
+
+    }
+
+    private int getNumResults(ResultSet sqlResults) {
+        try {
+            if (sqlResults.last()) {
+                int rows = sqlResults.getRow();
+                // Move to beginning
+                sqlResults.beforeFirst();
+                return rows;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return -1;
+    }
+
 
     private String getValidMemberID() {
         String inputID;

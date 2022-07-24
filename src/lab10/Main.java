@@ -7,7 +7,7 @@ public class Main {
 
         boolean verbose = false;
 
-        System.out.println("\n\n***   Lab9   ***\n\n");
+        System.out.println("\n\n***   Lab10   ***\n\n");
         // TODO: handle arg input again
         if(args.length >= 1){
             if (args[0].equalsIgnoreCase("V")){
